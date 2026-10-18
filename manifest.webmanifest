@@ -1,0 +1,13 @@
+{
+  "name": "TypeLit — Read, Learn, Type",
+  "short_name": "TypeLit",
+  "description": "Читайте книги, изучайте слова и тренируйте слепую печать.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#17191d",
+  "theme_color": "#17191d",
+  "lang": "ru",
+  "icons": [
+    { "src": "./icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}

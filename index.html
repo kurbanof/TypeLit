@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17191d">
+  <meta name="description" content="TypeLit — читай, учись и печатай вслепую.">
+  <title>TypeLit — read, learn, type</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <a class="brand" href="#home" aria-label="TypeLit — главная">
+        <span class="brand-mark">T<span class="pixel-dot">L</span></span>
+        <span class="brand-name">Type<span>Lit</span><small>READ · LEARN · TYPE</small></span>
+      </a>
+      <div class="sidebar-label">РАБОЧЕЕ ПРОСТРАНСТВО</div>
+      <nav class="nav-list" aria-label="Главное меню">
+        <button class="nav-item active" data-view="home"><span class="nav-icon">▦</span>Главная</button>
+        <button class="nav-item" data-view="lessons"><span class="nav-icon">⌨</span>Уроки <span class="nav-badge">RU / EN</span></button>
+        <button class="nav-item" data-view="library"><span class="nav-icon">▤</span>Моя библиотека <span class="nav-count" id="libraryCount">0</span></button>
+        <button class="nav-item" data-view="stats"><span class="nav-icon">↗</span>Статистика</button>
+      </nav>
+      <div class="sidebar-spacer"></div>
+      <div class="sidebar-tip"><span class="tip-mark">✳</span><div><b>Маленький шаг — каждый день</b><p>Даже 10 минут практики помогают закрепить навык.</p></div></div>
+      <button class="profile-button"><span class="avatar">Я</span><span class="profile-name">Мой профиль<small>локальные данные</small></span><span class="more">···</span></button>
+    </aside>
+
+    <main class="main-area">
+      <header class="topbar">
+        <button class="sidebar-toggle" id="sidebarToggle" type="button" aria-label="Скрыть меню" aria-expanded="true" title="Свернуть меню"><span></span><span></span><span></span></button>
+        <div class="breadcrumb"><span>TypeLit</span><span class="slash">/</span><b id="crumb">Главная</b></div>
+        <div class="top-actions"><span class="local-pill"><i></i>Сохранено на устройстве</span><button class="icon-button" id="themeToggle" title="Переключить оформление">◐</button><button class="icon-button settings-open" title="Настройки">⚙</button></div>
+      </header>
+      <div id="content" class="content"></div>
+    </main>
+  </div>
+
+  <dialog id="importDialog" class="dialog import-dialog">
+    <form method="dialog" class="dialog-x"><button class="icon-button" aria-label="Закрыть">×</button></form>
+    <div class="dialog-eyebrow">НОВЫЙ МАТЕРИАЛ</div>
+    <h2 id="importTitle">Добавить в библиотеку</h2>
+    <p class="dialog-subtitle">Выберите файл — TypeLit извлечёт текст, чтобы вы могли печатать его в приложении.</p>
+    <label class="dropzone" id="dropzone" for="fileInput">
+      <input id="fileInput" type="file" accept=".txt,.fb2,.epub,.apkg,.csv,.tsv">
+      <span class="upload-icon">↑</span><b>Перетащите файл сюда</b><span>или <u>выберите на компьютере</u></span>
+      <small>TXT · FB2 · EPUB · APKG · CSV · TSV</small>
+    </label>
+    <div class="import-foot"><span class="privacy-icon">◉</span>Файлы остаются на вашем компьютере</div>
+  </dialog>
+
+  <dialog id="ankiDialog" class="dialog anki-dialog">
+    <form method="dialog" class="dialog-x"><button class="icon-button" aria-label="Закрыть">×</button></form>
+    <div class="dialog-eyebrow">НАСТРОЙКА ИМПОРТА</div><h2>Подготовить карточки</h2>
+    <p class="dialog-subtitle" id="ankiFileName"></p>
+    <div class="form-grid">
+      <label>Название набора<input id="ankiName" type="text" value="Новая колода"></label>
+      <label>Язык упражнений<select id="ankiLanguage"><option>English</option><option>Русский</option><option>Определять автоматически</option></select></label>
+      <label class="span-2">Как выбирать карточки<select id="ankiFrequency"><option value="mistakes">Ошибочные чаще · адаптивно</option><option value="sequence">По порядку</option><option value="shuffle">Случайный порядок</option></select></label>
+      <div class="span-2 field-picker"><b>Поля для набора</b><p>Выберите поля и порядок их печати</p><div id="fieldOptions" class="field-options"></div></div>
+    </div>
+    <div class="notice"><span>ⓘ</span><span id="ankiNotice">После импорта можно будет выбрать, какую сторону карточки печатать.</span></div>
+    <div class="dialog-actions"><button class="button secondary" id="cancelAnki">Отмена</button><button class="button primary" id="confirmAnki">Добавить в библиотеку <span>→</span></button></div>
+  </dialog>
+
+  <dialog id="settingsDialog" class="dialog settings-dialog">
+    <form method="dialog" class="dialog-x"><button class="icon-button" aria-label="Закрыть">×</button></form>
+    <div class="dialog-eyebrow">ПЕРСОНАЛИЗАЦИЯ</div><h2>Настройки TypeLit</h2>
+    <div class="form-grid"><label>Акцент интерфейса<select id="accentSetting"><option value="amber">Ночная библиотека · янтарный</option><option value="sage">Тёмный терминал · шалфей</option><option value="indigo">Чернильный индиго · лаванда</option></select></label><label>Шрифт интерфейса<select id="fontSetting"><option value="pixel">Pixel Cyr Normal</option><option value="system">Системный</option></select></label><label>Раскладка для уроков<select id="layoutSetting"><option>Русская · ЙЦУКЕН</option><option>English · QWERTY</option></select></label><label>Звук ошибок<select><option>Выключен</option><option>Тихий сигнал</option></select></label></div>
+    <div class="notice"><span>ⓘ</span><span>Pixel Cyr Normal применяется к интерфейсу и упражнениям. Для длинного книжного текста можно выбрать читаемый системный шрифт.</span></div>
+    <div class="dialog-actions"><button class="button primary" id="saveSettings">Готово</button></div>
+  </dialog>
+  <div id="toast" class="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
