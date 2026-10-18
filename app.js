@@ -39,7 +39,7 @@ function lessonExercise(language, kind, sample) {
   return sequence;
 }
 const starterLessons=Object.fromEntries(Object.entries(courseGroups).map(([lang,groups])=>[lang,groups.flatMap(group=>group.lessons.map(([title,sample])=>({title,keys:sample,text:lessonExercise(lang,group.kind,sample),category:group.category,kind:group.kind})))]));
-const defaultState = { items: [], stats: { totalChars: 0, totalErrors: 0, totalSeconds: 0, sessions: 0, daily: {} }, settings: { accent: 'amber', font: 'pixel', layout: 'Русская · ЙЦУКЕН', sidebarHidden: false, showGuide: true }, lessonProgress: { ru: 0, en: 0 } };
+const defaultState = { items: [], stats: { totalChars: 0, totalErrors: 0, totalSeconds: 0, sessions: 0, daily: {} }, settings: { accent: 'amber', font: 'pixel', layout: 'Русская · ЙЦУКЕН', sidebarHidden: false, showGuide: true, showTrainerStats: true }, lessonProgress: { ru: 0, en: 0 } };
 let state = structuredClone(defaultState), dbPromise, currentView = 'home', activeItemId = null;
 let session = { target: '', position: 0, errors: 0, startedAt: null, elapsed: 0, base: 0, typed: '', lastCountedLength: 0, mode: 'book', lessonIndex: 0, language: 'ru' };
 let tickHandle = null, toastHandle = null, pendingAnki = null, lessonLang = 'ru', stateSaveTimer = null;
@@ -174,10 +174,27 @@ function onTypingKeydown(event) {
     : item?.kind === 'deck' ? (item.cards?.[item.cardIndex || 0]?.text || '')
     : item?.text || '';
   const expected = full[session.base + el.value.length];
+  if (expected === undefined) { event.preventDefault(); return; }
   const physical = characterFromKeyEvent(event, language);
   const character = actual === expected ? actual : physical === expected ? expected : actual || physical;
   if (!character) return;
   event.preventDefault();
+  if (!session.startedAt) startTimer();
+  if (character !== expected) {
+    session.errors = (session.errors || 0) + 1;
+    session._countedErrors = session.errors;
+    session.currentError = true;
+    state.stats.totalErrors = (state.stats.totalErrors || 0) + 1;
+    if (item?.kind === 'deck') {
+      const card = item.cards?.[item.cardIndex || 0];
+      if (card) card.errors = (card.errors || 0) + 1;
+    }
+    const position = session.mode === 'lesson' ? session.position : item?.kind === 'deck' ? item.cards?.[item.cardIndex || 0]?.position || 0 : item?.position || 0;
+    updateTypingDisplay(full, position, true, language);
+    const errorValue = $('#errorValue'); if (errorValue) errorValue.textContent = session.errors;
+    persistSoon();
+    return;
+  }
   el.value += character;
   onTyping({ currentTarget: el });
 }
@@ -221,9 +238,10 @@ function trainerPage() {
   const pos = item ? (item.kind === 'deck' ? item.cards?.[item.cardIndex||0]?.position || 0 : item.position || 0) : session.position;
   const bookPage = item?.kind === 'book' ? bookPageData(item) : null;
   const language=item?.language||session.language||'en', target=full[pos]||'', finger=fingerForCharacter(target,language);
-  const stats = `<div class="trainer-stats"><div class="stat-item"><span>Скорость</span><b>${currentWpm()}<small>сл/мин</small></b></div><div class="stat-item"><span>Точность</span><b>${calcSessionAccuracy()}<small>%</small></b></div><div class="stat-item"><span>Ошибки</span><b>${session.errors}</b></div><div class="stat-item"><span>Время</span><b id="timerValue">${timerText()}</b></div></div>`;
+  const progressPercent=full.length?Math.min(100,Math.floor(pos/full.length*100)):0;
+  const stats = `<div class="trainer-stats ${state.settings.showTrainerStats===false?'stats-hidden':''}"><div class="stat-item"><span>Время</span><b id="timerValue">${timerText()}</b></div><div class="stat-item"><span>Прогресс</span><b id="progressValue">${progressPercent}<small>%</small></b></div><div class="stat-item"><span>Скорость</span><b id="speedValue">${currentWpm()}<small>сл/мин</small></b></div><div class="stat-item"><span>Ошибки</span><b id="errorValue">${session.errors}</b></div></div>`;
   const keyLabel=target===' '?'ПРОБЕЛ':target||'КОНЕЦ';
-  return `<div class="trainer-top"><div class="trainer-title"><div class="eyebrow">${item?.kind === 'deck' ? 'КАРТОЧКИ ANKI' : session.mode === 'lesson' ? 'УРОК СЛЕПОЙ ПЕЧАТИ' : 'ЧТЕНИЕ И ПРАКТИКА'}</div><h1>${esc(title)}</h1><p>${item?.kind === 'deck' ? `Карточка ${(item.cardIndex||0)+1} из ${item.cards?.length||0}` : item?.author ? esc(item.author) : 'Набирайте текст по одному символу, без прокрутки страницы'}</p></div><div class="trainer-controls"><button class="button secondary small" data-action="pause">Ⅱ&nbsp; Пауза</button><button class="button ghost small" data-action="exit">←&nbsp; К библиотеке</button></div></div>${stats}
+  return `<div class="trainer-top"><div class="trainer-title"><div class="eyebrow">${item?.kind === 'deck' ? 'КАРТОЧКИ ANKI' : session.mode === 'lesson' ? 'УРОК СЛЕПОЙ ПЕЧАТИ' : 'ЧТЕНИЕ И ПРАКТИКА'}</div><h1>${esc(title)}</h1><p>${item?.kind === 'deck' ? `Карточка ${(item.cardIndex||0)+1} из ${item.cards?.length||0}` : item?.author ? esc(item.author) : 'Набирайте текст по одному символу, без прокрутки страницы'}</p></div><div class="trainer-controls"><button class="button ghost small" data-action="toggle-stats">${state.settings.showTrainerStats===false?'Показать метрики':'Скрыть метрики'}</button><button class="button secondary small" data-action="pause">Ⅱ&nbsp; Пауза</button><button class="button ghost small" data-action="exit">←&nbsp; К библиотеке</button></div></div>${stats}
   ${bookPage ? `<section class="panel book-reader"><div class="book-reader-heading"><span class="tiny-label">СТРАНИЦА ${bookPage.index+1} / ${bookPage.count}</span><div class="book-page-controls"><button class="button ghost small" data-action="page-prev" ${bookPage.index===0?'disabled':''}>←</button><button class="button ghost small" data-action="page-next" ${bookPage.index>=bookPage.count-1?'disabled':''}>→</button></div></div><div id="bookPageText" class="book-page-text">${renderBookPage(item,bookPage)}</div>${bookPage.index!==bookPage.currentIndex?`<div class="page-choice"><button class="button primary small" data-action="start-page">С этой</button><button class="button secondary small" data-action="continue-saved">Продолжить</button></div>`:''}</section>` : ''}
   <section class="panel typing-focus-panel"><div class="typing-field-label"><span>${item?.kind==='deck'?'ТЕКСТ КАРТОЧКИ':'ТЕКСТ УПРАЖНЕНИЯ'}</span><span class="field-mode">ПОДСКАЗКА ПО СИМВОЛАМ</span></div><div class="typing-line-shell" id="typingSurface" title="Нажмите сюда и печатайте"><div class="typing-line" id="typingLine">${typingLineMarkup(full,pos,session.currentError)}</div><input id="typingInput" class="typing-capture" type="text" spellcheck="false" autocomplete="off" autocapitalize="off" aria-label="Поле слепой печати" autofocus></div>
   <div class="next-finger"><span>СЛЕДУЮЩИЙ СИМВОЛ <kbd id="nextKeyHint">${esc(keyLabel)}</kbd></span><span class="finger-label" id="fingerHint">${fingerNames[finger]}</span></div>
@@ -255,6 +273,7 @@ function bindContent() {
   $$('[data-action="page-next"]').forEach(el => el.addEventListener('click',()=>moveBookPage(1)));
   $$('[data-action="start-page"]').forEach(el => el.addEventListener('click',startAtDisplayedPage));
   $$('[data-action="continue-saved"]').forEach(el => el.addEventListener('click',continueAtSavedPosition));
+  $$('[data-action="toggle-stats"]').forEach(el => el.addEventListener('click',()=>{state.settings.showTrainerStats=state.settings.showTrainerStats===false;$('.trainer-stats')?.classList.toggle('stats-hidden',!state.settings.showTrainerStats);el.textContent=state.settings.showTrainerStats?'Скрыть метрики':'Показать метрики';persist();}));
   $('#typingInput')?.addEventListener('keydown', onTypingKeydown);
   $('#typingInput')?.addEventListener('input', onTyping);
   $('#typingSurface')?.addEventListener('click', () => $('#typingInput')?.focus());
@@ -284,13 +303,13 @@ function saveCurrentPosition() {
   const item = itemById(activeItemId); if (item) { if (item.kind !== 'deck') item.position = session.position; else item.cardIndex = item.cardIndex || 0; item.elapsed = session.elapsed; item.updatedAt = Date.now(); persist(); }
 }
 function onTyping(e) {
-  const el = e.currentTarget, val = el.value;
+  const el = e.currentTarget; let val = el.value;
   if (!session.startedAt) startTimer();
   let full = session.mode === 'lesson' ? session.target : (itemById(activeItemId)?.text || '');
   let pos = session.mode === 'lesson' ? session.position : (itemById(activeItemId)?.position || 0);
   if (itemById(activeItemId)?.kind === 'deck') full = itemById(activeItemId)?.cards?.[itemById(activeItemId).cardIndex || 0]?.text || '';
   const previous=session.typed||'';let common=0;while(common<previous.length&&common<val.length&&previous[common]===val[common])common++;
-  if(val.length>common)for(let i=common;i<val.length;i++)if(val[i]!==full[session.base+i]){session.errors++;const activeDeck=itemById(activeItemId);if(activeDeck?.kind==='deck'){const card=activeDeck.cards?.[activeDeck.cardIndex||0];if(card)card.errors=(card.errors||0)+1;}}
+  if(val.length>common){for(let i=common;i<val.length;i++)if(val[i]!==full[session.base+i]){session.errors++;session._countedErrors=session.errors;state.stats.totalErrors=(state.stats.totalErrors||0)+1;val=val.slice(0,i);el.value=val;const activeDeck=itemById(activeItemId);if(activeDeck?.kind==='deck'){const card=activeDeck.cards?.[activeDeck.cardIndex||0];if(card)card.errors=(card.errors||0)+1;}break;}}
   session.lastCountedLength=val.length;
   session.typed = val;
   let correct = 0; while (correct < val.length && val[correct] === full[session.base + correct]) correct++;
@@ -315,9 +334,9 @@ function onTyping(e) {
   const activePos=session.mode==='lesson'?session.position:(deckItem?.kind==='deck'?deckItem.cards?.[deckItem.cardIndex||0]?.position||0:(itemById(activeItemId)?.position||0));
   updateTypingDisplay(full,activePos,session.currentError,deckItem?.language||session.language);
   const counter = $('#typedCounter'); if (counter) counter.textContent = `${Math.max(0,activePos-(session.startPosition||0))} символов`;
-  const speed = $('.trainer-stats .stat-item:nth-child(1) b'); if(speed) speed.innerHTML = `${currentWpm()}<small>сл/мин</small>`;
-  const acc = $('.trainer-stats .stat-item:nth-child(2) b'); if(acc) acc.innerHTML = `${calcSessionAccuracy()}<small>%</small>`;
-  const err = $('.trainer-stats .stat-item:nth-child(3) b'); if(err) err.textContent = session.errors;
+  const progressValue=$('#progressValue');if(progressValue)progressValue.innerHTML=`${full.length?Math.min(100,Math.floor(activePos/full.length*100)):0}<small>%</small>`;
+  const speed=$('#speedValue');if(speed)speed.innerHTML=`${currentWpm()}<small>сл/мин</small>`;
+  const err=$('#errorValue');if(err)err.textContent=session.errors;
   if (activeItemId) { const item = itemById(activeItemId); if (item) item.updatedAt = Date.now(); }
   if (lessonDone) { finishLesson(); return; }
   if (cardDone) { persistSoon(); showToast('Карточка пройдена'); nextCard(); return; }

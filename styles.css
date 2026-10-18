@@ -17,12 +17,12 @@ button,.panel,.typing-line-shell,.book-char,.sidebar{transition:color .24s ease,
 .sidebar-hidden .sidebar{display:none}
 .sidebar-hidden .main-area{display:block;width:100%;min-width:0}
 .sidebar-hidden .content{width:100%;max-width:1500px}
-.sidebar-toggle{position:fixed;z-index:12;top:16px;left:257px;width:32px;height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid #353941;border-radius:6px;background:#21242a;color:#a7a8ad;cursor:pointer;transition:left .24s ease,background-color .2s ease,border-color .2s ease}
+.sidebar-toggle{position:fixed;z-index:12;top:14px;left:199px;width:32px;height:32px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border:1px solid #353941;border-radius:6px;background:#21242a;color:#a7a8ad;cursor:pointer;transition:left .24s ease,background-color .2s ease,border-color .2s ease}
 .sidebar-toggle:hover{background:#2c3037;border-color:#535965}
 .sidebar-toggle span{width:14px;height:1.5px;border-radius:2px;background:currentColor;transition:transform .2s ease,opacity .2s ease}
 .sidebar-hidden .sidebar-toggle{left:14px}
 .sidebar-hidden .topbar{padding-left:58px}
-.topbar .breadcrumb{margin-left:45px}
+.topbar .breadcrumb{margin-left:0}
 .sidebar-hidden .topbar .breadcrumb{margin-left:0}
 .book-reader{margin:0 0 16px;padding:16px 20px 18px;min-height:260px;max-height:min(54vh,620px);display:flex;flex-direction:column;overflow:hidden}
 .book-reader-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;flex:none}
@@ -36,11 +36,12 @@ button,.panel,.typing-line-shell,.book-char,.sidebar{transition:color .24s ease,
 .guide-toggle-row{display:flex;justify-content:center;margin-top:6px}
 .guide-hidden .next-finger,.guide-hidden .hands-keyboard,.guide-hidden .typing-hint{display:none!important}
 .trainer-page{min-height:calc(100vh - 140px)}
+.trainer-stats.stats-hidden{display:none}
 .typing-focus-panel{transition:box-shadow .3s ease,border-color .3s ease}
 .typing-line-shell:focus-within{box-shadow:0 0 0 4px #71869a24,inset 0 0 22px #0005}
 .line-char.typed-char{transition:opacity .36s ease,color .36s ease}
 .light-mode .book-page-text{background:#f0eee9;color:#42464b;border-color:#d5d1c9}
 @media(max-width:700px){.sidebar-hidden .app-shell{display:block}.book-reader{max-height:46vh;padding:12px}.book-page-text{padding:10px;font-size:14px;line-height:1.65}}
-@media(max-width:1000px) and (min-width:701px){.sidebar-toggle{left:222px}}
+@media(max-width:1000px) and (min-width:701px){.sidebar-toggle{left:164px}}
 @media(max-width:700px){.sidebar-toggle{left:auto;right:12px;top:9px}.sidebar-hidden .sidebar-toggle{left:12px;right:auto;top:8px}.sidebar-hidden .topbar{padding-left:55px}.topbar .breadcrumb{margin-left:0}.sidebar .nav-list{padding-right:40px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
